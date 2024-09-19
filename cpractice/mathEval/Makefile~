@@ -1,2 +1,0 @@
-calculate: calculate.c
-		cc calculate.c -o calculate

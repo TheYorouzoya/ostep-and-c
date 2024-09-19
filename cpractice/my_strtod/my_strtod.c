@@ -182,6 +182,8 @@ double my_strtod (const char* expression, char** endptr) {
     i++;
   }
 
+  
+
   // variable numberExponent keeps track of digits after decimal point as powers of ten
   int numberExponent = 0;
   // variable scientificExponent keeps track of the exponent after the 'E'
