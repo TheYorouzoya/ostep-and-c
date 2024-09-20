@@ -1,11 +1,18 @@
 /**
  * @file: my_strtod.c
  * @author: Ratnesh Rastogi
-
+ *
  * This file contains my own (naive and terrible) implementation of the strtod()
- * library function. Right now, it works for any given decimal string
- * as well as any scientific notation string. I'm still working on
- * supporting hexadecimal numbers.
+ * library function. Right now, it works for any given decimal or hexadecimal string
+ * as well as any scientific notation string.
+ *
+ * The function also doesn't handle the overflow messages properly. Though the returned value
+ * usually matches what's given by the strtod() function within the 15 digit precision.
+ * Check the test suite output (or write your own test case and see) for actual numbers.
+ *
+ * I have done my best effort to position the "endptr" passed to the proper position, but
+ * since the book I'm reading currently has put aside pointers for later, my implementation
+ * may not have the expected behaviour for that variable.
  */
 
 #include <stdio.h>
@@ -74,6 +81,8 @@ double parse_number (
  * character set 0-F;
  */
 int parse_digit (char query, bool hexadecimalFlag);
+
+bool case_insensitive_strncmp(const char* str1, const char* str2, unsigned int n);
 
 /**
  * Runs all tests for the my_strtod() function.
@@ -152,14 +161,16 @@ double my_strtod (const char* expression, char** endptr) {
 
   // check for 'NAN' or 'INFINITY'
   if ((length - parserPosition) >= 3) {
-    if (tolower(expression[parserPosition]) == 'n' &&
-	      tolower(expression[parserPosition + 1]) == 'a' &&
-	      tolower(expression[parserPosition + 2]) == 'n') {
+    if (case_insensitive_strncmp(expression, "nan", parserPosition)) {
+      *endptr = (char*) &expression[parserPosition + 3];
       return NAN;
     }
-    if (tolower(expression[parserPosition]) == 'i' &&
-	      tolower(expression[parserPosition + 1]) == 'n' &&
-	      tolower(expression[parserPosition + 2]) == 'f') {
+    if (case_insensitive_strncmp(expression, "inf", parserPosition)) {
+      if (case_insensitive_strncmp(expression, "infinity", parserPosition)) {
+        *endptr = (char*) &expression[parserPosition + 8];
+      } else {
+        *endptr = (char*) &expression[parserPosition + 3];
+      }
       return INFINITY;
     }
   }
@@ -210,6 +221,9 @@ double parse_number (const char* expression,
   // denotes if any valid digits have been found so far
   bool foundDigits = false;
 
+  // denotes it the given input would cause overflow (positive or negative)
+  bool overflowFlag = false;
+
   // keeps track of digits after decimal point as powers of ten i.e., 3.123 will 
   // have the variable set to 3 as there are 3 digits after the decimal point
   int digitsAfterDecimalPoint = 0;
@@ -257,7 +271,10 @@ double parse_number (const char* expression,
     }
     
     // convert current character to a number
-    // since the digits in the binary exponent for 
+    // since the digits in the binary exponent for a hexadecimal input are to
+    // be treated as "decimal" digits (and not "hexadecimal" digits; in fact,
+    // strtod() will stop parsing if passed a hex character in the binary
+    // exponent), the passed flag to parse_digit() reflects that behaviour
     int digit = parse_digit (current, hexadecimalFlag && !scientificFlag);
 
     if (digit < 0) {
@@ -278,6 +295,7 @@ double parse_number (const char* expression,
 
     // detect overflow
     if (temp < 0) {
+      overflowFlag = true;
       break;
     }
 
@@ -297,8 +315,18 @@ double parse_number (const char* expression,
 
   // exit if no digits were detected by the loop
   if (!foundDigits) {
-    *endptr = (char*) expression;
+    if (hexadecimalFlag) {
+      *endptr = (char*) &expression[parserPosition - 1];
+    } else {
+      *endptr = (char*) expression;
+    }
     return 0.0;
+  } else {
+    *endptr = (char*) &expression[parserPosition];
+  }
+
+  if (overflowFlag) {
+    fprintf(stderr, "my_strtod: Numerical result out of range\n");
   }
 
   // printf("Whole: %g\nFraction: %g\nExponent: %d\n", whole, fraction, digitsAfterDecimalPoint);
@@ -325,6 +353,7 @@ int parse_digit (char query, bool hexadecimalFlag) {
     return digit;
   }
 
+  // parse hex characters
   if (hexadecimalFlag) {
     switch (tolower(query)) {
       case 'a':
@@ -351,6 +380,24 @@ int parse_digit (char query, bool hexadecimalFlag) {
   }
 
   return -1;
+}
+
+bool case_insensitive_strncmp(const char* str1, const char* str2, unsigned int str1_position) {
+  if (str1 == NULL || str2 == NULL) {
+    return false;
+  }
+
+  bool flag = true;
+
+  // assume that str1 >= str2
+  for (int i = 0; i < strlen(str2); i++) {
+    if(tolower(str1[str1_position + i]) != str2[i]) {
+      flag = false;
+      break;
+    }
+  }
+
+  return flag;
 }
 
 void run_tests () {
@@ -395,10 +442,16 @@ void run_tests () {
 
   // test 7: positive overflow
   expression = "12345678946551654987654654987465413.0";
+  test(expression, "Test: large positive number");
+
+  expression = "100e1231231231849141241123128371231";
   test(expression, "Test: positive overflow");
 
+  expression = "100e12312412412312312412412313abcdef";
+  test(expression, "Test: positive overflow with invalid characters in the string");
+  
   expression = "-123654987984651346479865132465798465413515496.0";
-  test(expression, "Test: negative overflow");
+  test(expression, "Test: large negative number");
 
   expression = "0.000000000000000000000000000000000000123465";
   test(expression, "Test: underflow");
@@ -524,6 +577,7 @@ void test (char* expression, char* test_description) {
   err_flag = (fabs(result - expected) >= epsilon);
 
   printf("Expected: %.20g\nResult:   %.20g\n", expected, result);
+  printf("Characters after number: \nExpected: %s\nResult: %s\n", endptr_expected, endptr_result); 
   
   if (!err_flag) {
     printf("Test passed\n");
