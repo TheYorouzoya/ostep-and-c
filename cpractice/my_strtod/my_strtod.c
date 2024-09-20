@@ -58,8 +58,9 @@
  * NOTE that the binary exponent in the hexadecimal form only accepts DECIMAL
  * DIGITS and not hexadecimal digits (that is the description from strtod()).
  * 
- * @param[in]  expression
- * @param[out] endptr
+ * @param[in]  expression the string to be parsed
+ * @param[out] endptr     pointer to be placed at the position in given string
+ *                        where the number ends
  * @return Returns a double number representing the number that was found.
  */
 double my_strtod (const char* expression, char** endptr);
@@ -79,10 +80,21 @@ double parse_number (
  * character is a digit. If the hexadecimal flag is set to true, then returns
  * 0-15 depending on whether the given character falls within the hexadecimal
  * character set 0-F;
+ *
+ * @param[in] query           the given character to be parsed
+ * @param[in] hexadecimalFlag whether the given character is from the hex charset
  */
 int parse_digit (char query, bool hexadecimalFlag);
 
-bool case_insensitive_strncmp(const char* str1, const char* str2, unsigned int n);
+/**
+ * Returns true if string "str2" is found at the position indicated by "str1_position"
+ * inside the string "str1".
+ *
+ * @param[in] str1          the given string
+ * @param[in] str2          the string to be searched within the given string
+ * @param[in] str1_position the starting position in "str1" to start looking from 
+ */
+bool case_insensitive_strncmp(const char* str1, const char* str2, unsigned int str1_position);
 
 /**
  * Runs all tests for the my_strtod() function.
