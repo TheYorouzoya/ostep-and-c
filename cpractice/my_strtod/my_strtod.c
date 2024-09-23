@@ -3,16 +3,13 @@
  * @author: Ratnesh Rastogi
  *
  * This file contains my own (naive and terrible) implementation of the strtod()
- * library function. Right now, it works for any given decimal or hexadecimal string
+ * library function. It works for any given decimal or hexadecimal string
  * as well as any scientific notation string.
- *
- * The function also handles overflows and the returned value matches what's given by the strtod()
- * function within the 15 digit precision.
- * Check the test suite output (or write your own test case and see) for actual numbers.
  *
  * I have done my best effort to position the "endptr" passed to the proper position, but
  * since the book I'm reading currently has put aside pointers for later, my implementation
- * may not have the expected behaviour for that variable (especially in case of overflow).
+ * may not have the expected behaviour. That said, the test cases all pass.
+ * Check the test suite output (or write your own test case and see) for actual numbers.
  */
 
 #include <stdio.h>
@@ -83,6 +80,8 @@ double parse_number (
  *
  * @param[in] query           the given character to be parsed
  * @param[in] hexadecimalFlag whether the given character is from the hex charset
+ * @return    Returns a digit value i.e., 0-9 or 0-15 if the given character falls
+ *            in the 0-9 or 0-F character set. Returns -1 otherwise. 
  */
 int parse_digit (char query, bool hexadecimalFlag);
 
@@ -120,8 +119,6 @@ void test(char* expression, char* test_description);
 int main (int argc, char* argv[argc + 1]){
   
   run_tests();
-
-  // test("0x8p-a", "Test: exponent");
   
   return EXIT_SUCCESS;
 }
@@ -269,7 +266,7 @@ double parse_number (const char* expression,
     // also, only process the 'e' or 'E' if there are leading digits present
     if (tolower(current) == RADIX_CHARACTER && !scientificFlag && foundDigits) {
       scientificFlag = true;
-      // toggle the decimalFlag off so that the temp variable stores the corect
+      // toggle the decimalFlag off so that the temp variable stores the correct
       // value
       decimalFlag = false;
       continue;
@@ -296,10 +293,15 @@ double parse_number (const char* expression,
       foundDigits = true;
     }
 
+    // keep parsing digits after overflow in order to set the *endptr at the proper
+    // position
+    if (overflowFlag) continue;
+
     // update temporary number with the current one
     if (decimalFlag) {
       temp = (fraction * RADIX) + digit;
     } else if (scientificFlag) {
+      // scientific exponent is always in decimal
       temp = (scientificExponent * 10) + digit;
     } else {
       temp = (whole * RADIX) + digit;
@@ -308,7 +310,6 @@ double parse_number (const char* expression,
     // detect overflow
     if (temp < 0) {
       overflowFlag = true;
-      break;
     }
 
     // update appropriate variable once clear
@@ -337,11 +338,11 @@ double parse_number (const char* expression,
     *endptr = (char*) &expression[parserPosition];
   }
 
+  // in case of overflow, print error and return inifinity
   if (overflowFlag) {
     fprintf(stderr, "my_strtod: Numerical result out of range\n");
+    return INFINITY;
   }
-
-  // printf("Whole: %g\nFraction: %g\nExponent: %d\n", whole, fraction, digitsAfterDecimalPoint);
 
   // negate exponent if a minus sign was present in the scientific exponent part
   if (negativeExponentFlag)
@@ -356,6 +357,7 @@ double parse_number (const char* expression,
 
   return number;
 }
+
 
 int parse_digit (char query, bool hexadecimalFlag) {
   int digit = query - '0';
@@ -394,6 +396,7 @@ int parse_digit (char query, bool hexadecimalFlag) {
   return -1;
 }
 
+
 bool case_insensitive_strncmp(const char* str1, const char* str2, unsigned int str1_position) {
   if (str1 == NULL || str2 == NULL) {
     return false;
@@ -411,6 +414,7 @@ bool case_insensitive_strncmp(const char* str1, const char* str2, unsigned int s
 
   return flag;
 }
+
 
 void run_tests () {
   
