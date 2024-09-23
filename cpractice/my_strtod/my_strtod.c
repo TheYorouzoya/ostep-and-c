@@ -6,13 +6,13 @@
  * library function. Right now, it works for any given decimal or hexadecimal string
  * as well as any scientific notation string.
  *
- * The function also doesn't handle the overflow messages properly. Though the returned value
- * usually matches what's given by the strtod() function within the 15 digit precision.
+ * The function also handles overflows and the returned value matches what's given by the strtod()
+ * function within the 15 digit precision.
  * Check the test suite output (or write your own test case and see) for actual numbers.
  *
  * I have done my best effort to position the "endptr" passed to the proper position, but
  * since the book I'm reading currently has put aside pointers for later, my implementation
- * may not have the expected behaviour for that variable.
+ * may not have the expected behaviour for that variable (especially in case of overflow).
  */
 
 #include <stdio.h>
