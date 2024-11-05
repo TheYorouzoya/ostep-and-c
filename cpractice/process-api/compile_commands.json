@@ -1,0 +1,28 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-o",
+      "q3.o",
+      "q3.c"
+    ],
+    "directory": "/home/house/ostep/cpractice/process-api",
+    "file": "/home/house/ostep/cpractice/process-api/q3.c",
+    "output": "/home/house/ostep/cpractice/process-api/q3.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-Wall",
+      "-Werror",
+      "-o",
+      "q3",
+      "q3.c"
+    ],
+    "directory": "/home/house/ostep/cpractice/process-api",
+    "file": "/home/house/ostep/cpractice/process-api/q3.c",
+    "output": "/home/house/ostep/cpractice/process-api/q3"
+  }
+]
