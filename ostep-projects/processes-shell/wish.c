@@ -59,16 +59,8 @@
 #include <errno.h>
 #include <string.h>
 
-#define ERROR_MESSAGE "An error has occured\n"
-#define PROMPT "wish> "
-
-void print_error();
-
-void run_batch_mode();
-
-void run_interactive_mode();
-
-size_t tokenize_line();
+#include "wish.h"
+#include "path.h"
 
 int main(int argc, char *argv[]) {
     /* shell accepts at most one argument */
@@ -102,7 +94,6 @@ void run_interactive_mode() {
     bool exitFlag = false;
     char *lineptr = NULL;
     size_t n = 0, line_size, token_num;
-    char *path = "/bin";
 
     /* print the prompt and wait for user input */
     while (!exitFlag) {
@@ -138,14 +129,11 @@ void run_interactive_mode() {
 
         if (token_num == -1) {
             /* no tokens found */
+            print_error();
             continue;
         }
 
-        printf("number of tokens: %ld\nTokens: ", token_num);
-        for (int i = 0; i < token_num; i++) {
-            printf("%s ", tokens[i]);
-        }
-        printf("\n");
+
 
         free(linecpy);
         free(tokens);
@@ -213,8 +201,7 @@ size_t tokenize_line(char ***tokens, char **lineptr, const size_t line_size) {
         *tokens = (char **) realloc(*tokens, sizeof(char *) * num);
         if (!*tokens) {
             /* realloc failed */
-            print_error();
-            exit(EXIT_FAILURE);
+            return -1;
         }
 
         /* store token in array */
