@@ -6,9 +6,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define DEFAULT_PATHS "/bin"
-#define DEFAULT_PATHS_NUM 1
-
 typedef struct path_s path_t;
 
 /**

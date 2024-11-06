@@ -22,7 +22,7 @@ all: $(TARG)
 
 # generate target executable
 $(TARG): $(OBJS)
-	$(CC) -o -g $(TARG) $(OBJS)
+	$(CC) -o $(TARG) -g $(OBJS)
 
 # generic rule for .o files
 %.o: %.c

@@ -1,5 +1,8 @@
 #include "path.h"
 
+#define DEFAULT_PATH "/bin"
+#define DEFAULT_PATHS_NUM 1
+
 path_t *init_default_path() {
     /* default path includes only '/bin' */
     path_t *p;
@@ -17,7 +20,10 @@ path_t *init_default_path() {
         return NULL;
     }
 
-    p->paths[0] = DEFAULT_PATHS;
+    char *def = malloc(strlen(DEFAULT_PATH) + 1);
+    strncpy(def, DEFAULT_PATH, strlen(DEFAULT_PATH) + 1);
+
+    p->paths[0] = def;
     p->num = DEFAULT_PATHS_NUM;
 
     return p;
@@ -26,7 +32,7 @@ path_t *init_default_path() {
 void free_path(path_t *p) {
     if (!p) return;             /* return if already null */
 
-    if (p->paths && p->num > 0) {             /* only free initialized paths */
+    if (p->paths) {             /* only free initialized paths */
         char* tmp;
         for (int i = 0; i < p->num; i++) {
             tmp = *p->paths + i;

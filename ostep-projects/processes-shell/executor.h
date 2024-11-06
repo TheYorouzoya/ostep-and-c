@@ -21,6 +21,6 @@ void execute_external_command(char***, size_t, path_t*);
  *
  * On error, or if the command isn't executable in any of the paths, returns -1.
  **/
-int isExecutable(char*, path_t*);
+char* isExecutable(char*, path_t*);
 
 #endif // EXECUTOR_H_

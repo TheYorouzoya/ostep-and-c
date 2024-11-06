@@ -92,6 +92,8 @@ void run_interactive_mode() {
         if((line_size = getline(&lineptr, &n, stdin)) == -1) {
             if (errno == 0) {
                 if (lineptr) free(lineptr);
+                free_path(path);
+                printf("\n");
                 /* encountered EOF */
                 exit(EXIT_SUCCESS);
             }

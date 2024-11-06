@@ -1,4 +1,5 @@
 #include "executor.h"
+#include <stdlib.h>
 
 
 void execute_external_command(char ***tokens, size_t token_num, path_t *path) {
@@ -6,9 +7,9 @@ void execute_external_command(char ***tokens, size_t token_num, path_t *path) {
     /* TODO: A parser or preprocessor to parse redirection and parallel commands */
 
     char *command = *tokens[0];
-    int path_index, wstatus;
+    int wstatus;
 
-    if ((path_index = isExecutable(command, path)) < 0) {
+    if ((command = isExecutable(command, path)) < 0) {
         print_error();
         return;
     }
@@ -27,35 +28,35 @@ void execute_external_command(char ***tokens, size_t token_num, path_t *path) {
         /* execute command in child */
 
         /* resize token list to include terminating NULL pointer for execv() */
-        *tokens = realloc(*tokens, sizeof(char **) * (token_num + 1));
+        char **args = malloc(sizeof(char **) * (token_num + 1));
 
-        if (!*tokens) {
-            /* realloc failed */
+        if (!args) {
+            /* malloc failed */
             print_error();
-            exit(EXIT_FAILURE); /* exit child */
+            exit(EXIT_FAILURE);
         }
 
-        *tokens[token_num] = NULL;
+        for (int i = 0; i < token_num; i++) {
+            args[i] = *tokens[i];
+        }
 
-        printf("Forked and about to execute: %s\n", command);
+        args[token_num] = NULL;
 
-        execv(path->paths[path_index], *tokens);
+        execv(command, *tokens);
 
         /* exec returning here means an error occured */
-        printf("Error executing command\n");
         print_error();
+        free(args);
         exit(EXIT_FAILURE);
 
     } else {
         /* shell waits for the command to finish executing */
-        waitpid(proc, &wstatus, 0);
-        printf("Shell finished waiting\n");
+        proc = waitpid(proc, &wstatus, 0);
     }
 }
 
 
-int isExecutable(char *command, path_t *path) {
-    int index = -1;
+char* isExecutable(char *command, path_t *path) {
     char *full_path, *curr;
 
     /* traverse each path, append command to path string and check if executable */
@@ -66,7 +67,7 @@ int isExecutable(char *command, path_t *path) {
         full_path = malloc(p_len + cmd_len + 2); /* initialize appended string */
         if (!full_path) {
             /* malloc failed */
-            return -1;
+            return NULL;
         }
 
         full_path[0] = '\0';
@@ -80,12 +81,12 @@ int isExecutable(char *command, path_t *path) {
 
         if (access(full_path, X_OK) == 0) {
             /* command is executable */
-            free(full_path);
-            return i;
+            command = full_path;
+            return command;
         }
 
         free(full_path);
     }
 
-    return index;
+    return NULL;
 }
