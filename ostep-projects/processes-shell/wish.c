@@ -50,17 +50,7 @@
 **                              the newly specififed path.
 */
 
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-
 #include "wish.h"
-#include "path.h"
 
 int main(int argc, char *argv[]) {
     /* shell accepts at most one argument */
@@ -80,11 +70,6 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-void print_error() {
-    write(STDERR_FILENO, ERROR_MESSAGE, strlen(ERROR_MESSAGE));
-}
-
-
 void run_batch_mode() {
     printf("Now running in batch mode\n");
 }
@@ -94,6 +79,9 @@ void run_interactive_mode() {
     bool exitFlag = false;
     char *lineptr = NULL;
     size_t n = 0, line_size, token_num;
+    path_t *path;
+
+    path = init_default_path();
 
     /* print the prompt and wait for user input */
     while (!exitFlag) {
@@ -133,7 +121,7 @@ void run_interactive_mode() {
             continue;
         }
 
-
+        execute_command(&tokens, token_num, path);
 
         free(linecpy);
         free(tokens);
@@ -142,26 +130,7 @@ void run_interactive_mode() {
     free(lineptr);
 }
 
-/**
- * Tokenizes the given line using strtok_r(),stores all the token pointers
- * into the provided tokens array, and returns the number of tokens encountered.
- *
- * On success, tokenize_line() returns the number of tokens encountered. Returns -1
- * on failure or if no tokens were found in the given line.
- *
- * The `tokens` pointer should be set to `NULL` before the call. Since the function
- * automatically resizes the array using realloc(), the caller should call
- * free() once they're done using the array.
- *
- * Since strtok_r() modifies the given string, make sure a copy of the line is passed.
- * The function uses whilespace `" "` as a delimiter while parsing the line for tokens.
- *
- * Also, since the pointers returned by strtok_r() all point to different sections
- * inside the input line, there is no need to free each individual entry within the
- * `tokens` array. Simply free the `lineptr` and the `tokens` pointers to reclaim
- * all memory.
- *
- *  */
+
 size_t tokenize_line(char ***tokens, char **lineptr, const size_t line_size) {
 
     if (!*tokens) {
@@ -211,4 +180,16 @@ size_t tokenize_line(char ***tokens, char **lineptr, const size_t line_size) {
     }
 
     return num;
+}
+
+
+void execute_command(char ***tokens, size_t token_num, path_t *path) {
+    char *command = *tokens[0];
+    command_t cmd_type = get_command_type(command);
+
+    if (cmd_type == CMD_EXTERNAL) {
+        execute_external_command(tokens, token_num, path);
+    } else {
+        execute_built_in_command(cmd_type, tokens, token_num, path);
+    }
 }

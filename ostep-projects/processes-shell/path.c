@@ -1,9 +1,5 @@
 #include "path.h"
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-
 path_t *init_default_path() {
     /* default path includes only '/bin' */
     path_t *p;
@@ -102,4 +98,14 @@ size_t add_paths(path_t *path, char ***paths, const size_t path_num) {
     path = p;
 
     return path->num;
+}
+
+
+/* print a given path variable's contents for debugging */
+void print_paths(path_t *path) {
+    printf("Path Variable:\nNum: %ld\nPaths: ", path->num);
+    for (int i = 0; i < path->num; i++) {
+        printf("%s ", path->paths[i]);
+    }
+    printf("\n");
 }

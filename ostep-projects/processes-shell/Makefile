@@ -4,13 +4,32 @@
 # @file
 # @version 0.1
 
-wish: wish.o
-	gcc -o wish wish.c -Wall -Werror
+# source filed
+SRCS = wish.c commands.c executor.c path.c error.c
 
-wish_debug: wish.o
-	gcc -o wish wish.c -g -Wall -Werror
+# target executable
+TARG = wish
 
+# compiler, compile flags, and needed libs
+CC 	 = gcc
+OPTS = -Wall -Werror
+# LIBS =
+
+# translate .c files in SRCS list to .o's
+OBJS =  $(SRCS:.c=.o)
+
+all: $(TARG)
+
+# generate target executable
+$(TARG): $(OBJS)
+	$(CC) -o -g $(TARG) $(OBJS)
+
+# generic rule for .o files
+%.o: %.c
+	$(CC) $(OPTS) -c $< -o $@
+
+# perform cleanup
 clean:
-	rm wish wish.o
+	rm -f $(OBJS) $(TARG)
 
 # end
