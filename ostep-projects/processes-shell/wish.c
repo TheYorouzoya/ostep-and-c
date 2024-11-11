@@ -51,6 +51,9 @@
 */
 
 #include "wish.h"
+#include "structs.h"
+
+#define PROMPT "wish> "
 
 int main(int argc, char *argv[]) {
     /* shell accepts at most one argument */
@@ -78,10 +81,8 @@ void run_batch_mode() {
 void run_interactive_mode() {
     bool exitFlag = false;
     char *lineptr = NULL;
-    size_t n = 0, line_size, token_num;
-    path_t *path;
-
-    path = init_default_path();
+    size_t n = 0, line_size;
+    path_t *path = init_default_path();
 
     /* print the prompt and wait for user input */
     while (!exitFlag) {
@@ -91,8 +92,8 @@ void run_interactive_mode() {
 
         if((line_size = getline(&lineptr, &n, stdin)) == -1) {
             if (errno == 0) {
-                if (lineptr) free(lineptr);
-                free_path(path);
+                if (lineptr != NULL) free(lineptr);
+                if(path != NULL) free_path(path);
                 printf("\n");
                 /* encountered EOF */
                 exit(EXIT_SUCCESS);
@@ -107,91 +108,119 @@ void run_interactive_mode() {
             (lineptr)[line_size - 1] = '\0';
         }
 
-        char **tokens;
 
         /* Even though lineptr is guaranteed to be null terminated, we'll still
          * err on the side of caution here */
         char *linecpy = (char *) malloc(sizeof(char) * (line_size + 1));
-        strcpy(linecpy, lineptr);		// copy line
-        linecpy[line_size - 1] = '\0';	// null terminate again to be sure
+        strncpy(linecpy, lineptr, line_size); /* copy line */
+        linecpy[line_size - 1] = '\0';        /* null terminate line to be sure */
 
-        token_num = tokenize_line(&tokens, &lineptr, line_size);
+        char *redir_file;
+        int has_redirect = parse_redirect(linecpy, line_size, &redir_file);
+        command_t *cmd = get_command(linecpy, line_size);
 
-        if (token_num == -1) {
-            /* no tokens found */
+        if (check_syntax(cmd, has_redirect, &redir_file)) {
+            if (has_redirect == 0) {
+                /* command has valid redirect syntax */
+                execute_command(cmd, &path);
+            } else {
+                /* only external commands support redirection */
+                if (cmd->typ == CMD_EXTERNAL) {
+                    execute_command_and_redirect(cmd, path, redir_file);
+                } else {
+                    /* redirection on internal commands is an error */
+                    print_error();
+                }
+            }
+        } else {
             print_error();
-            continue;
         }
 
-        execute_command(&tokens, token_num, path);
-
         free(linecpy);
-        free(tokens);
+        free_command(cmd);
     }
 
     free(lineptr);
 }
 
 
-size_t tokenize_line(char ***tokens, char **lineptr, const size_t line_size) {
 
-    if (!*tokens) {
-        return -1;
-    }
-
-    char *token, *saveptr;
-    char **tmp;                 /* pointer to traverse tokens */
-    size_t num = 0;
-
-    /* start tokenizing */
-    token = strtok_r(*lineptr, " ", &saveptr);	/* fetches command */
-
-    if (token == NULL) {
-        /* no tokens found i.e., line is all whitespace */
-        return -1;
-    }
-
-    num++;
-
-    *tokens = (char **) malloc(sizeof(char *) * num);
-
-    if (!*tokens) {
-        /* malloc failed */
-        print_error();
-        exit(EXIT_FAILURE);
-    }
-
-    /* store first token */
-    tmp = *tokens;
-    *tmp = token;
-
-    /* parse the rest of the tokens */
-    while ((token = strtok_r(NULL, " ", &saveptr))) {
-        num++;
-
-        *tokens = (char **) realloc(*tokens, sizeof(char *) * num);
-        if (!*tokens) {
-            /* realloc failed */
-            return -1;
-        }
-
-        /* store token in array */
-        tmp = *tokens;
-        tmp = tmp + num - 1;;
-        *tmp = token;
-    }
-
-    return num;
+bool check_syntax(command_t *cmd, int has_redirect, char **redir_file) {
+    if (has_redirect == -1) return false; /* if more than one redirect character present */
+    if (cmd == NULL) return false;        /* if command has no valid tokens */
+    return true;
 }
 
 
-void execute_command(char ***tokens, size_t token_num, path_t *path) {
-    char *command = *tokens[0];
-    command_t cmd_type = get_command_type(command);
+int parse_redirect(char *lineptr, size_t line_size, char **redir_ptr) {
+    /* redirection syntax is as follows:
+     * command [args ...] > file */
 
-    if (cmd_type == CMD_EXTERNAL) {
-        execute_external_command(tokens, token_num, path);
+    char *token, *saveptr;
+
+    bool contains = (strchr(lineptr, '>') != NULL);
+
+    token = strtok_r(lineptr, ">", &saveptr);
+
+    if (token == NULL) {
+        /* string is empty */
+        return -1;
+    }
+
+    /* line is non-empty */
+
+    if ((token = strtok_r(NULL, ">", &saveptr)) == NULL) {
+        if(contains) {
+            /* operator present, but file string is empty */
+            return -1;
+        }
+        /* no redirection operator present */
+        return 0;
+    }
+
+    *redir_ptr = token;         /* store file string pointer */
+
+    if (strtok_r(NULL, ">", &saveptr) != NULL) {
+        /* more than one redirect character present */
+        *redir_ptr = NULL;
+        return -1;
+    }
+
+    /* check if there are multiple files in the obtained token string */
+    token = strtok_r(*redir_ptr, WHITESPACE, &saveptr);
+
+    if (token == NULL) {
+        /* file string token is all whitespace */
+        return -1;
+    }
+
+    /* file string no longer has any leading whitespace */
+
+    *redir_ptr = token;         /* update file string pointer position */
+
+    /* check if file string has more than one file */
+    if ((token = strtok_r(NULL, WHITESPACE, &saveptr)) != NULL) {
+        /* extra files found */
+        return -1;
+    }
+
+    /* if no extra files were found, the call to strtok_r() would have cleaned up any
+     * trailing whitespace as well by replacing them with the null byte ('\0') */
+
+    return 1;
+}
+
+
+command_t *tokenize_line(char **lineptr, const size_t line_size) {
+
+    return NULL;
+}
+
+
+void execute_command(command_t *cmd, path_t **path) {
+    if (cmd->typ == CMD_EXTERNAL) {
+        execute_external_command(cmd, *path);
     } else {
-        execute_built_in_command(cmd_type, tokens, token_num, path);
+        execute_built_in_command(cmd, path);
     }
 }

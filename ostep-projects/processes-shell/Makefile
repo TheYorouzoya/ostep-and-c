@@ -5,14 +5,14 @@
 # @version 0.1
 
 # source filed
-SRCS = wish.c commands.c executor.c path.c error.c
+SRCS = commands.c executor.c path.c error.c wish.c
 
 # target executable
 TARG = wish
 
 # compiler, compile flags, and needed libs
 CC 	 = gcc
-OPTS = -Wall -Werror
+OPTS = -g -Wall -Werror
 # LIBS =
 
 # translate .c files in SRCS list to .o's
@@ -22,7 +22,7 @@ all: $(TARG)
 
 # generate target executable
 $(TARG): $(OBJS)
-	$(CC) -o $(TARG) -g $(OBJS)
+	$(CC) -o $(TARG) $(OBJS)
 
 # generic rule for .o files
 %.o: %.c

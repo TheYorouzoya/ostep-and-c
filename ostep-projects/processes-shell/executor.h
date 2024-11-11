@@ -7,9 +7,12 @@
 #include <sys/wait.h>
 #include "path.h"
 #include "error.h"
+#include "commands.h"
 
 
-void execute_external_command(char***, size_t, path_t*);
+void execute_external_command(command_t*, path_t*);
+
+void execute_command_and_redirect(command_t*, path_t*, char*);
 
 
 /**
@@ -21,6 +24,6 @@ void execute_external_command(char***, size_t, path_t*);
  *
  * On error, or if the command isn't executable in any of the paths, returns -1.
  **/
-char* isExecutable(char*, path_t*);
+char* isExecutable(command_t*, path_t*);
 
 #endif // EXECUTOR_H_

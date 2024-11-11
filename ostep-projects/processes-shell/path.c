@@ -1,115 +1,109 @@
 #include "path.h"
-
-#define DEFAULT_PATH "/bin"
-#define DEFAULT_PATHS_NUM 1
+#include "structs.h"
 
 path_t *init_default_path() {
     /* default path includes only '/bin' */
     path_t *p;
     p = malloc(sizeof(path_t));
 
-    if (!p) {
+    if (p == NULL) {
         /* malloc failed */
         return NULL;
     }
+
+    char *def_p = "/bin";
+    size_t def_len = strlen(def_p);
+    size_t def_p_num = 1;
 
     p->paths = malloc(sizeof(char **));
 
-    if(!p->paths) {
+    if(p->paths == NULL) {
         /* malloc failed */
         return NULL;
     }
 
-    char *def = malloc(strlen(DEFAULT_PATH) + 1);
-    strncpy(def, DEFAULT_PATH, strlen(DEFAULT_PATH) + 1);
+    char *def_path_string = malloc(def_len + 1);
 
-    p->paths[0] = def;
-    p->num = DEFAULT_PATHS_NUM;
+    if (def_path_string == NULL) {
+        /* malloc failed */
+        return NULL;
+    }
+
+    strncpy(def_path_string, def_p, def_len + 1);
+
+    *p->paths = def_path_string;
+    p->num = def_p_num;
 
     return p;
 }
 
 void free_path(path_t *p) {
-    if (!p) return;             /* return if already null */
+    if (p == NULL) return;             /* return if already null */
 
-    if (p->paths) {             /* only free initialized paths */
-        char* tmp;
+    if (p->paths != NULL) {             /* only free initialized paths */
         for (int i = 0; i < p->num; i++) {
-            tmp = *p->paths + i;
-            free(tmp);
+            if (p->paths[i] == NULL) continue;
+            free(p->paths[i]);
         }
         free(p->paths);
     }
-
     free(p);
+    return;
 }
 
-size_t add_paths(path_t *path, char ***paths, const size_t path_num) {
-    path_t *p;                  /* temporary path */
+path_t *add_paths(command_t *cmd) {
+    /* create temporary path */
+    path_t *new_p;
 
-    /* initialize new path */
-    p = malloc(sizeof(path_t));
-    if (!p) {
+    new_p = malloc(sizeof(path_t));
+    if (new_p == NULL) {
         /* malloc failed */
-        return -1;
+        return NULL;
     }
 
-    p->num = path_num;
+    new_p->num = 0;
 
-    if (p->num) {
-        /* new path is empty */
-        free_path(path);
-        path = p;
-        return p->num;
+
+    /* copy paths to this new path */
+    new_p->num = cmd->argc;
+
+    if (new_p->num == 0 || cmd->args == NULL) {
+        new_p->paths = NULL;
+        return new_p;
     }
 
-    p->paths = malloc(sizeof(p->paths) * p->num);
-    if (!p->paths) {
-        /* malloc failed */
-        return -1;
-    }
+    new_p->paths = malloc(sizeof(char*) * cmd->argc);
 
-    /* copy all path strings */
-    char *tmp, *cpy;
-    char **curr;                /* current path token */
-    int i = 0;
     bool m_fail = false;
+    int i = 0;
 
-    curr = *paths;
+    for (char *curr = *cmd->args; i < new_p->num; i++, curr++) {
+        char *cpy = malloc(sizeof(char) * (strlen(curr) + 1));
 
-    for(; i < p->num; i++) {
-        curr = curr + i;
-        tmp = *curr;
-        cpy = malloc(sizeof(cpy) * (strlen(tmp) + 1));
-
-        if (!cpy) {
+        if (cpy == NULL) {
             /* malloc failed */
             m_fail = true;
             break;
         }
 
-        strcpy(cpy, tmp);
-
-        p->paths[i] = cpy;
+        strncpy(cpy, curr, (strlen(curr) + 1));
+        new_p->paths[i] = cpy;
     }
 
     if (m_fail) {
-        /* malloc failed while copying strings */
-        p->num = i;
-        free_path(p);
-        return -1;
+        /* malloc failed in loop */
+        new_p->num = i;
+        free_path(new_p);
+        return NULL;
     }
 
-    free_path(path);            /* adding path always overwrites old path */
-    path = p;
-
-    return path->num;
+    return new_p;
 }
 
 
 /* print a given path variable's contents for debugging */
 void print_paths(path_t *path) {
-    printf("Path Variable:\nNum: %ld\nPaths: ", path->num);
+    printf("Path num: %ld\nPaths: ", path->num);
     for (int i = 0; i < path->num; i++) {
         printf("%s ", path->paths[i]);
     }

@@ -6,7 +6,7 @@
 #include <string.h>
 
 #define ERROR_MESSAGE "An error has occured\n"
-#define PROMPT "wish> "
+#define WHITESPACE " \f\n\r\t\v"
 
 
 void print_error();
