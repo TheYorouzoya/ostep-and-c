@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define ERROR_MESSAGE "An error has occured\n"
+#define ERROR_MESSAGE "An error has occurred\n"
 #define WHITESPACE " \f\n\r\t\v"
 
 

@@ -1,8 +1,5 @@
 #include "commands.h"
-#include "error.h"
-
-#include <stdlib.h>
-#include <string.h>
+#include "tokens.h"
 
 command_type get_command_type(char *command) {
     if(strcmp(command, "exit") == 0) return CMD_EXIT;
@@ -13,7 +10,7 @@ command_type get_command_type(char *command) {
 }
 
 
-command_t *get_command(char *line, size_t line_len) {
+command_t *get_command(char *line) {
     command_t *cmd = malloc(sizeof(command_t));
 
     if (cmd == NULL) {
@@ -31,6 +28,7 @@ command_t *get_command(char *line, size_t line_len) {
 
     if (token == NULL) {
         /* no commands found */
+        free(cmd);
         return NULL;
     }
 
@@ -137,6 +135,63 @@ void print_command(command_t *cmd) {
 }
 
 
+void execute_command(char *cmd_string, path_t **path) {
+    if (cmd_string == NULL || path == NULL) {
+        print_error();
+        return;
+    }
+
+    char *redir_file;
+    int has_redirect = parse_redirect(cmd_string, &redir_file);
+
+    if (has_redirect == -1) {
+        print_error();
+        return;
+    }
+
+    command_t *cmd = get_command(cmd_string);
+
+    if (cmd == NULL) {
+        return;
+    }
+
+    if (has_redirect == 0) {
+        /* command has no redirect */
+        redir_file = NULL;
+    }
+
+    if (cmd->typ != CMD_EXTERNAL) {
+        execute_built_in_command(cmd, path);
+    } else {
+        /* execute external command in child process */
+        int wstatus;
+        pid_t child_proc = fork();
+
+        if (child_proc == -1) {
+            /* fork failed */
+            print_error();
+            free_command(cmd);
+            return;
+        }
+
+        if (child_proc == 0) {
+            /* execute external command in child */
+            execute_external_command(cmd, *path, redir_file);
+
+            /* returning here means execv() failed */
+            print_error();
+            free_command(cmd);
+            exit(EXIT_FAILURE);
+        } else {
+            /* parent simply waits for the child to finish */
+            waitpid(child_proc, &wstatus, 0);
+        }
+    }
+
+    free_command(cmd);
+}
+
+
 void execute_built_in_command(command_t *cmd, path_t **path) {
     switch(cmd->typ) {
         case CMD_EXIT:
@@ -189,4 +244,145 @@ path_t *execute_path(command_t *cmd, path_t **p) {
 
     free_path(*p);
     return new_p;
+}
+
+
+
+void execute_external_command(command_t *cmd, path_t *path, char *redir_file) {
+    /* check if command is executable */
+    char *exec_path = isExecutable(cmd, path);
+
+    if (exec_path == NULL) {
+        /* command not executable */
+        return;
+    }
+
+
+    if (redir_file != NULL) {
+        /* redirect stdout to file */
+        FILE *fp = freopen(redir_file, "w+", stdout);
+
+        if (fp == NULL) {
+            return;
+        }
+
+        /* redirect stdee to stdout, i.e., to the file a */
+        if (dup2(fileno(stdout), fileno(stderr)) == -1) {
+            return;
+        }
+    }
+
+    /* execute command */
+    execv(exec_path, cmd->args);
+
+    /* returning here is an error */
+    free(exec_path);
+}
+
+
+void execute_commands_in_parallel(tokens_t *tkn, path_t **path) {
+    if (tkn == NULL) {
+        /* given tokens variable is empty */
+        print_error();
+        return;
+    }
+
+    pid_t pids[tkn->num];
+    int wstatus[tkn->num];
+    size_t count = 0;
+
+    for (int i = 0; i < tkn->num; i++) {
+        pid_t p_fork = fork();
+
+        if (p_fork == -1) {
+            /* fork failed */
+            print_error();
+            continue;
+        }
+
+        if (p_fork == 0) {
+            /* execute command in child */
+            char *redir_file;
+            int has_redirect = parse_redirect(tkn->tokens[i], &redir_file);
+
+            if (has_redirect == -1) {
+                /* incorrect redirect syntax */
+                print_error();
+                exit(EXIT_FAILURE);
+            }
+
+            command_t *cmd = get_command(tkn->tokens[i]);
+
+            if (cmd == NULL) {
+                /* could not extract a command from string token */
+                print_error();
+                exit(EXIT_FAILURE);
+            }
+
+            if (has_redirect == 0) {
+                /* command has no redirect */
+                redir_file = NULL;
+            }
+
+            if (cmd->typ != CMD_EXTERNAL) {
+                /* command is a built-in command */
+                execute_built_in_command(cmd, path);
+            } else {
+                execute_external_command(cmd, *path, redir_file);
+
+                /* returning here means execv() failed */
+                print_error();
+                free_command(cmd);
+                exit(EXIT_FAILURE);
+            }
+
+            free_command(cmd);
+            exit(EXIT_SUCCESS);
+
+        } else {
+            /* parent stores the process ID and executes next command */
+            pids[count++] = p_fork;
+        }
+    }
+
+    /* only parent will return here */
+    for (int i = 0; i < count; i++) {
+        /* wait for all childs to terminate */
+        waitpid(pids[i], &wstatus[i], 0);
+    }
+}
+
+
+char* isExecutable(command_t *cmd, path_t *path) {
+    char *full_path, *curr;
+
+    /* traverse each path, append command to path string and check if executable */
+    for (int i = 0, cmd_len = strlen(cmd->args[0]); i < path->num; i++) {
+        curr = path->paths[i];  /* current path */
+        int p_len = strlen(curr);
+
+        full_path = malloc(p_len + cmd_len + 2); /* initialize appended string */
+        if (full_path == NULL) {
+            /* malloc failed */
+            return NULL;
+        }
+
+        full_path[0] = '\0';
+
+        strncat(full_path, curr, p_len); /* copy current path */
+
+        full_path[p_len] = '/'; /* add '/' before appending command */
+        full_path[p_len + 1] = '\0';
+
+        strncat(full_path, cmd->args[0], cmd_len); /* append command */
+
+        if (access(full_path, X_OK) == 0) {
+            /* command is executable */
+            return full_path;
+        }
+
+        free(full_path);
+    }
+
+    return NULL;
 }

@@ -63,7 +63,6 @@ path_t *add_paths(command_t *cmd) {
 
     new_p->num = 0;
 
-
     /* copy paths to this new path */
     new_p->num = cmd->argc;
 
@@ -77,16 +76,38 @@ path_t *add_paths(command_t *cmd) {
     bool m_fail = false;
     int i = 0;
 
-    for (char *curr = *cmd->args; i < new_p->num; i++, curr++) {
-        char *cpy = malloc(sizeof(char) * (strlen(curr) + 1));
+    for (; i < new_p->num; i++) {
+        char *cpy;
+        char *curr = cmd->args[i];
 
-        if (cpy == NULL) {
-            /* malloc failed */
-            m_fail = true;
-            break;
+        if (curr[0] == '/') {
+            cpy = malloc(sizeof(char) * (strlen(curr) + 1));
+
+            if (cpy == NULL) {
+                /* malloc failed */
+                m_fail = true;
+                break;
+            }
+
+            strncpy(cpy, curr, (strlen(curr) + 1));
+
+        } else {
+            /* path is a relative path; add "./" at beginning */
+            cpy = malloc(sizeof(char) * (strlen(curr) + 3));
+
+            if (cpy == NULL) {
+                /* malloc failed */
+                m_fail = true;
+                break;
+            }
+
+            cpy[0] = '.';
+            cpy[1] = '/';
+            cpy[3] = '\0';
+
+            strncat(cpy, curr, strlen(curr) + 3);
         }
 
-        strncpy(cpy, curr, (strlen(curr) + 1));
         new_p->paths[i] = cpy;
     }
 

@@ -5,7 +5,7 @@
 # @version 0.1
 
 # source filed
-SRCS = commands.c executor.c path.c error.c wish.c
+SRCS = commands.c path.c error.c tokens.c wish.c
 
 # target executable
 TARG = wish

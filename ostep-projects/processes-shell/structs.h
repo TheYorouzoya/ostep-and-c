@@ -3,14 +3,22 @@
 
 #include<stdlib.h>
 
-/**
- * Struct holds the number of paths and all path strings
- **/
-struct path_s {
-    char **paths;
+typedef struct {
+    char **tokens;
     size_t num;
-};
+} tokens_t;
 
+/**
+ * Struct holds the number of paths and all path strings.
+ **/
+typedef struct {
+    char **paths;               /* the path pointer array */
+    size_t num;                 /* number of paths in array */
+} path_t;
+
+/**
+ * Enum defines the different command types the shell supports
+ **/
 typedef enum {
     CMD_EXIT,                   /* exits shell */
     CMD_CD,                     /* changes working directory */
@@ -19,16 +27,18 @@ typedef enum {
 } command_type;
 
 
-struct command {
+/**
+ * Struct defines a shell command with command type, the argument strings
+ * associated with it, and the number of arguments themselves.
+ *
+ * For external commands, the command itself is included at the first position
+ * within the arguments.
+ **/
+typedef struct {
     command_type typ;           /* the type of command: external or internal */
     size_t argc;                /* the number of args */
     char **args;                /* the args themselves */
-};
-
-
-typedef struct command command_t;
-
-typedef struct path_s path_t;
+} command_t;
 
 
 #endif // STRUCTS_H_
