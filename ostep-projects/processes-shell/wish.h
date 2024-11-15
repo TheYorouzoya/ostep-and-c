@@ -1,5 +1,5 @@
-#ifndef WISH_H_
-#define WISH_H_
+#ifndef HOUSH_H_
+#define HOUSH_H_
 
 /* Library Headers */
 #include <stddef.h>
@@ -20,4 +20,6 @@
 
 void run_shell(FILE*, int);
 
-#endif // WISH_H_
+
+
+#endif // HOUSH_H_
