@@ -7,24 +7,6 @@ environment. Mastering use of the shell is necessary to become proficient in
 this world; knowing how the shell itself is built is the focus of this
 project.
 
-There are three specific objectives to this assignment:
-
-* To further familiarize yourself with the Linux programming environment.
-* To learn how processes are created, destroyed, and managed.
-* To gain exposure to the necessary functionality in shells.
-
-## Overview
-
-In this assignment, you will implement a *command line interpreter (CLI)* or,
-as it is more commonly known, a *shell*. The shell should operate in this
-basic way: when you type in a command (in response to its prompt), the shell
-creates a child process that executes the command you entered and then prompts
-for more user input when it has finished.
-
-The shells you implement will be similar to, but simpler than, the one you run
-every day in Unix. If you don't know what shell you are running, it's probably
-`bash`. One thing you should do on your own time is learn more about your
-shell, by reading the man pages or other online materials.
 
 ## Program Specifications
 
@@ -76,13 +58,11 @@ asking for input to tell it what command to execute. It then executes that
 command. The loop continues indefinitely, until the user types the built-in
 command `exit`, at which point it exits. That's it!
 
-For reading lines of input, you should use `getline()`. This allows you to
-obtain arbitrarily long input lines with ease. Generally, the shell will be
-run in *interactive mode*, where the user types a command (one at a time) and
-the shell acts on it. However, your shell will also support *batch mode*, in
-which the shell is given an input file of commands; in this case, the shell
-should not read user input (from `stdin`) but rather from this file to get the
-commands to execute.
+Generally, the shell will be run in *interactive mode*, where the user types a 
+command (one at a time) and the shell acts on it. However, your shell will also 
+support *batch mode*, in which the shell is given an input file of commands; in 
+this case, the shell should not read user input (from `stdin`) but rather from 
+this file to get the commands to execute.
 
 In either mode, if you hit the end-of-file marker (EOF), you should call
 `exit(0)` and exit gracefully. 
@@ -228,39 +208,3 @@ run the specified program. If there are any program-related errors (e.g.,
 invalid arguments to `ls` when you run it, for example), the shell does not
 have to worry about that (rather, the program will print its own error
 messages and exit).
-
-
-### Miscellaneous Hints
-
-Remember to get the **basic functionality** of your shell working before
-worrying about all of the error conditions and end cases. For example, first
-get a single command running (probably first a command with no arguments, such
-as `ls`). 
-
-Next, add built-in commands. Then, try working on redirection. Finally, think
-about parallel commands. Each of these requires a little more effort on
-parsing, but each should not be too hard to implement.
-
-At some point, you should make sure your code is robust to white space of
-various kinds, including spaces (` `) and tabs (`\t`). In general, the user
-should be able to put variable amounts of white space before and after
-commands, arguments, and various operators; however, the operators
-(redirection and parallel commands) do not require whitespace.
-
-Check the return codes of all system calls from the very beginning of your
-work. This will often catch errors in how you are invoking these new system
-calls. It's also just good programming sense.
-
-Beat up your own code! You are the best (and in this case, the only) tester of
-this code. Throw lots of different inputs at it and make sure the shell
-behaves well. Good code comes through testing; you must run many different
-tests to make sure things work as desired. Don't be gentle -- other users
-certainly won't be. 
-
-Finally, keep versions of your code. More advanced programmers will use a
-source control system such as git. Minimally, when you get a piece of
-functionality working, make a copy of your .c file (perhaps a subdirectory
-with a version number, such as v1, v2, etc.). By keeping older, working
-versions around, you can comfortably work on adding new functionality, safe in
-the knowledge you can always go back to an older, working version if need be.
-

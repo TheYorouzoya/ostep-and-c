@@ -25,6 +25,8 @@ Tests for the project are included inside the `tests/` folder. To run the test s
 
 Make sure the executable exists before running the test suite.
 
+Once you're done with the project, you can execute `make clean` to cleanup all the generated object files and executables.
+
 ## Features
 
 ### Modes
