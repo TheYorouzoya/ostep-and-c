@@ -12,7 +12,7 @@ To run the shell, simply type
 or
 
 ``` shell
-    ./wish [some_input_file.txt]
+    ./wish [some_input_file]
 ```
 
 The project is written in C, so make sure to have the latest version of `gcc` and `make` installed.
@@ -31,7 +31,7 @@ Once you're done with the project, you can execute `make clean` to cleanup all t
 
 ### Modes
 
-The shell can be run in two maodes : *interactive mode* and *bach mode*. Running the shell without an arguments launches it in *interactive mode*. Here, the shell simply wait for input and executes any commands typed into it. *Batch mode* expects a single file from the user and executes each line in the file as input.
+The shell can be run in two maodes : *interactive mode* and *bach mode*. Running the shell without an argument launches it in *interactive mode*. Here, the shell simply wait for input and executes any commands typed into it. *Batch mode* expects a single file from the user and executes each line in the file as input.
 
 ### Paths
 
